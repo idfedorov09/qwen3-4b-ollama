@@ -1,59 +1,71 @@
 # Qwen3-4B Ollama Stack
 
-Этот репозиторий разворачивает Ollama со встроенной моделью `Qwen3-4B` (квантованная сборка `unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M`). Проект рассчитан на быстрый запуск инференса локально или на сервере через Docker Compose.
+This repository provisions Ollama with the `Qwen3-4B` model baked into the image (`unsloth/Qwen3-4B-Instruct-2507-GGUF:Q4_K_M`). The stack targets fast local or server-side inference via Docker Compose.
 
-## Возможности
-- Автоматическая сборка образа Ollama c предзагруженной моделью.
-- Готовый `docker-compose.yml` с публикацией API на 11434 порту.
-- Healthcheck, который следит за доступностью модели и перезапускает контейнер при сбоях.
+## Features
+- Automated Ollama image build with the model preloaded.
+- Ready-to-run `docker-compose.yml` exposing the API on port 11434.
+- Health check that keeps the container alive and restarts it if the model becomes unavailable.
 
-## Требования
-- Docker 24+.
-- Docker Compose v2+
-- Не менее 8 ГБ свободного места под образ и модель.
+## Requirements
+- Docker 24 or newer.
+- Docker Compose v2+.
+- At least 8 GB of free disk space for the image and model cache.
 
-## Быстрый старт
-1. Склонируйте репозиторий и перейдите в каталог проекта.
-2. Соберите и поднимите стек:
+## Quick Start
+1. Clone the repository and move into the project directory.
+2. Build and launch the stack:
    ```bash
    docker compose up -d --build
    ```
-3. Проверьте состояние контейнера и загрузку модели:
+3. Inspect the container status and model load:
    ```bash
    docker compose ps
    docker compose logs ollama
    ```
-4. Убедитесь, что API отвечает:
+4. Confirm the API is reachable:
    ```bash
    curl http://localhost:11434/api/tags
    ```
 
-## Использование
-- Вызов модели через стандартный Ollama API:
+## Usage
+- Call the model through the Ollama REST API:
   ```bash
   curl http://localhost:11434/api/generate \
     -d '{"model":"qwen3-4b","prompt":"Hello"}'
   ```
-- Логи контейнера: `docker compose logs -f ollama`
-- Остановка: `docker compose down`
+- Python example with LangChain:
+  ```python
+  from langchain_ollama import ChatOllama
 
-## Настройка
-- Версия Ollama, репозиторий модели и квантование задаются через аргументы сборки в `docker-compose.yml` / `Dockerfile`:
-  - `OLLAMA_VERSION` — базовый образ Ollama.
-  - `HF_REPO` — исходный репозиторий на Hugging Face (по умолчанию `unsloth/Qwen3-4B-Instruct-2507-GGUF`).
-  - `QUANT` — вариант квантования модели.
-- Чтобы изменить модель, исправьте значения в блоке `build.args` и пересоберите образ.
+  llm = ChatOllama(
+      model="qwen3-4b",
+      base_url="http://localhost:11434",
+  )
 
-## Структура проекта
-- `Dockerfile` — двухстадийная сборка: на первом этапе скачивается модель, на втором формируется финальный образ.
-- `docker-compose.yml` — описание сервиса `ollama`, проброс порта 11434, монтирование volume `ollama` для кэша моделей.
-- `README.md` — текущий файл с инструкциями.
+  response = llm.invoke("Tell me a short fact about Qwen.")
+  print(response.content)
+  ```
+- Tail container logs: `docker compose logs -f ollama`
+- Stop the stack: `docker compose down`
 
-## Обслуживание
-- Обновление модели: поменяйте переменные и выполните `docker compose build`.
-- Очистка кэша моделей: `docker volume rm qwen3-4b_ollama` (контейнер должен быть остановлен).
-- Масштабирование: добавьте переменные окружения или дополнительные сервисы в `docker-compose.yml` при необходимости.
+## Configuration
+- The Ollama version, Hugging Face repository, and quantization level are controlled via build arguments in `docker-compose.yml` / `Dockerfile`:
+  - `OLLAMA_VERSION` — base Ollama image.
+  - `HF_REPO` — source model repository on Hugging Face (defaults to `unsloth/Qwen3-4B-Instruct-2507-GGUF`).
+  - `QUANT` — quantization variant.
+- Update the values in the `build.args` block and rebuild if you want a different model.
 
-## Полезные ссылки
-- [Документация Ollama](https://github.com/ollama/ollama)
+## Project Structure
+- `Dockerfile` — two-stage build: the first stage downloads the model, the second stage produces the runtime image.
+- `docker-compose.yml` — service definition for `ollama`, port 11434 mapping, and persistent `ollama` volume.
+- `README.md` — documentation you are reading now.
+
+## Maintenance
+- Update the model: adjust the build arguments and run `docker compose build`.
+- Clear the model cache: `docker volume rm qwen3-4b_ollama` (stop the container first).
+- Scale or customize: extend `docker-compose.yml` with additional environment variables or services as needed.
+
+## Useful Links
+- [Ollama Documentation](https://github.com/ollama/ollama)
 - [Hugging Face — unsloth/Qwen3-4B-Instruct-2507-GGUF](https://huggingface.co/unsloth/Qwen3-4B-Instruct-2507-GGUF)
